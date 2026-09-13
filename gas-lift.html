@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gas Lift Simulation — Petro Physics Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Roboto+Slab:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1B22; --bg-deep:#0A1318; --panel:#142229; --panel-border:#28414C;
+    --steel:#8195A0; --steel-dim:#4C5D64; --oil:#C8862B; --oil-dim:#7A5620;
+    --gas:#4FB6A8; --text:#E8EDEE; --text-muted:#93A3AA;
+    --sans:'IBM Plex Sans', sans-serif; --slab:'Roboto Slab', serif; --mono:'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px 60px;}
+  header.top{display:flex;justify-content:space-between;align-items:center;padding:22px 0;}
+  header.top a{color:var(--text-muted);text-decoration:none;font-size:14px;}
+  header.top a:hover{color:var(--gas);}
+  .wordmark{font-family:var(--slab);font-weight:600;font-size:14px;color:var(--text-muted);}
+  .wordmark b{color:var(--oil);}
+
+  h1{font-family:var(--slab);font-weight:600;font-size:32px;margin:6px 0 8px;}
+  .subtitle{color:var(--text-muted);font-size:15.5px;max-width:64ch;margin:0 0 30px;}
+
+  .stage{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;}
+  .viewport-panel{background:var(--bg-deep);border:1px solid var(--panel-border);}
+  #canvas-holder{width:100%;aspect-ratio:3/4;position:relative;cursor:grab;max-height:560px;}
+  #canvas-holder.dragging{cursor:grabbing;}
+  #canvas-holder canvas{display:block;width:100%;height:100%;}
+  .viewport-caption{padding:10px 14px;border-top:1px solid var(--panel-border);font-family:var(--mono);font-size:12px;color:var(--steel);}
+
+  .controls{background:var(--panel);border:1px solid var(--panel-border);padding:20px;}
+  .control-group{margin-bottom:22px;}
+  .control-label{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;margin-bottom:8px;}
+  .control-label span.val{font-family:var(--mono);color:var(--gas);font-size:13.5px;}
+  input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:3px;background:var(--panel-border);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--gas);cursor:pointer;border:2px solid var(--bg-deep);}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--gas);cursor:pointer;border:2px solid var(--bg-deep);}
+
+  .readouts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
+  .readout{border:1px solid var(--panel-border);padding:10px 12px;}
+  .readout .rlabel{font-size:11.5px;color:var(--text-muted);margin-bottom:4px;}
+  .readout .rvalue{font-family:var(--mono);font-size:19px;color:var(--text);}
+  .readout .runit{font-size:11px;color:var(--steel);}
+  .readout.full{grid-column:1/-1;}
+  .readout.full .rvalue{color:var(--gas);}
+  .readout.warn .rvalue{color:var(--oil);}
+
+  .assumptions{margin-top:18px;padding-top:14px;border-top:1px solid var(--panel-border);font-size:12.5px;color:var(--steel);line-height:1.7;}
+  .assumptions b{color:var(--text-muted);}
+
+  .chart-panel{background:var(--panel);border:1px solid var(--panel-border);margin-top:20px;padding:20px;}
+  .chart-title{font-family:var(--slab);font-size:17px;font-weight:600;margin:0 0 4px;}
+  .chart-sub{color:var(--text-muted);font-size:13.5px;margin:0 0 14px;}
+  #chart{width:100%;height:300px;display:block;}
+  .legend{display:flex;gap:22px;margin-top:10px;flex-wrap:wrap;}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);}
+  .legend-swatch{width:16px;height:3px;}
+  .legend-swatch.dash{background:repeating-linear-gradient(90deg,var(--steel) 0 4px, transparent 4px 8px);}
+
+  .note{margin-top:22px;font-size:13px;color:var(--steel);}
+
+  @media (max-width:860px){
+    .stage{grid-template-columns:1fr;}
+    #canvas-holder{aspect-ratio:4/3;max-height:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a href="index.html">&larr; Kembali ke menu</a>
+    <div class="wordmark"><b>Petro</b> Physics Lab</div>
+  </header>
+
+  <h1>Gas Lift Simulation</h1>
+  <p class="subtitle">Gas diinjeksikan ke tubing lewat katup gas lift supaya kolom fluida di atasnya jadi lebih ringan, sehingga tekanan balik ke reservoir turun dan sumur mengalir lebih deras. Tapi injeksi berlebihan justru menambah gesekan dan bisa menurunkan produksi lagi — geser slidernya dan cari titik optimumnya sendiri.</p>
+
+  <div class="stage">
+    <div class="viewport-panel">
+      <div id="canvas-holder"></div>
+      <div class="viewport-caption">Titik teal di tubing adalah katup injeksi gas. Di atasnya, gelembung bercampur dengan minyak dan naik lebih cepat.</div>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <div class="control-label"><span>Laju injeksi gas</span><span class="val" id="val-qgas">500 Mscf/hari</span></div>
+        <input type="range" id="slider-qgas" min="0" max="3000" step="50" value="500">
+      </div>
+
+      <div class="readouts">
+        <div class="readout"><div class="rlabel">Tekanan alir dasar sumur, Pwf</div><div class="rvalue" id="out-pwf">–</div><div class="runit">psi</div></div>
+        <div class="readout"><div class="rlabel">Kolom di atas katup</div><div class="rvalue" id="out-light">–</div><div class="runit">lebih ringan</div></div>
+        <div class="readout full"><div class="rlabel">Laju produksi minyak, q</div><div class="rvalue" id="out-q">–</div><div class="runit">STB/hari</div></div>
+      </div>
+
+      <div class="assumptions">
+        <b>Asumsi tetap:</b> tekanan reservoir 3000 psi, AOF (qmax) 3000 STB/hari, tekanan wellhead 100 psi, titik injeksi 5000 ft dari permukaan, GLR alami 100 scf/STB.
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-panel">
+    <p class="chart-title">Gas Lift Performance Curve (GLPC)</p>
+    <p class="chart-sub">Laju produksi naik seiring injeksi gas bertambah — sampai titik optimum, lalu menurun karena gesekan berlebih.</p>
+    <canvas id="chart"></canvas>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--gas);"></span> Laju produksi vs injeksi gas</div>
+      <div class="legend-item"><span class="legend-swatch dash"></span> Titik optimum</div>
+    </div>
+  </div>
+
+  <p class="note">Model disederhanakan: densitas kolom memakai pendekatan gradien efektif terhadap GLR, dan penalti gesekan gas berlebih memakai fungsi pangkat sederhana — bukan korelasi multiphase-flow (mis. Hagedorn-Brown) yang dipakai pada desain gas lift sesungguhnya.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ---------- Physics model ----------
+const Pr = 3000, qomax = 3000, Pwh = 100;
+const depthBelow = 1000, depthAbove = 5000;
+const naturalGLR = 100, qlRef = 1000, decay = 400, kf = 0.004, fExp = 1.5;
+const QGAS_MAX = 3000;
+
+function gradEff(GLR){ return 0.15 + 0.25*Math.exp(-GLR/decay); }
+function vogelQ(Pwf,Pr,qomax){
+  const r = Math.max(0, Pwf/Pr);
+  return Math.max(0, qomax*(1 - 0.2*r - 0.8*r*r));
+}
+function glrEff(Qgas){ return naturalGLR + (Qgas*1000)/qlRef; }
+function computePwf(Qgas){
+  const gradBelow = gradEff(naturalGLR);
+  const gradAbove = gradEff(glrEff(Qgas));
+  const friction = kf*Math.pow(Qgas, fExp);
+  return Pwh + gradBelow*depthBelow + gradAbove*depthAbove + friction;
+}
+function computeQ(Qgas){
+  return vogelQ(computePwf(Qgas), Pr, qomax);
+}
+function lightnessPct(Qgas){
+  const base = gradEff(naturalGLR);
+  const above = gradEff(glrEff(Qgas));
+  return Math.max(0, (1 - above/base)*100);
+}
+
+// ---------- UI wiring ----------
+const sliderQgas = document.getElementById('slider-qgas');
+const valQgas = document.getElementById('val-qgas');
+const outPwf = document.getElementById('out-pwf');
+const outQ = document.getElementById('out-q');
+const outLight = document.getElementById('out-light');
+
+let state = { Qgas: 500, Pwf: 0, q: 0, light: 0 };
+
+function recompute(){
+  state.Qgas = Number(sliderQgas.value);
+  valQgas.textContent = state.Qgas.toLocaleString('id-ID') + ' Mscf/hari';
+  state.Pwf = computePwf(state.Qgas);
+  state.q = computeQ(state.Qgas);
+  state.light = lightnessPct(state.Qgas);
+  outPwf.textContent = Math.round(state.Pwf).toLocaleString('id-ID');
+  outQ.textContent = Math.round(state.q).toLocaleString('id-ID');
+  outLight.textContent = Math.round(state.light) + '%';
+  drawChart();
+}
+sliderQgas.addEventListener('input', recompute);
+
+// ---------- Chart ----------
+const chartCanvas = document.getElementById('chart');
+const chartCtx = chartCanvas.getContext('2d');
+function resizeChart(){
+  const rect = chartCanvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  chartCanvas.width = rect.width*dpr;
+  chartCanvas.height = rect.height*dpr;
+  chartCtx.setTransform(dpr,0,0,dpr,0,0);
+  drawChart();
+}
+function drawChart(){
+  const rect = chartCanvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  const ml=58, mr=18, mt=16, mb=36;
+  const plotW = w-ml-mr, plotH = h-mt-mb;
+  chartCtx.clearRect(0,0,w,h);
+
+  const xMax = QGAS_MAX;
+  const yMax = qomax*0.95;
+  const X = qg => ml + (qg/xMax)*plotW;
+  const Y = q => mt + plotH - (Math.min(q,yMax)/yMax)*plotH;
+
+  chartCtx.strokeStyle = '#28414C';
+  chartCtx.lineWidth = 1;
+  chartCtx.beginPath();
+  chartCtx.moveTo(ml,mt); chartCtx.lineTo(ml,mt+plotH); chartCtx.lineTo(ml+plotW,mt+plotH);
+  chartCtx.stroke();
+
+  chartCtx.font = '11px IBM Plex Mono, monospace';
+  for(let qg=0; qg<=xMax; qg+=500){
+    const x = X(qg);
+    chartCtx.strokeStyle='rgba(40,65,76,0.5)';
+    chartCtx.beginPath(); chartCtx.moveTo(x,mt); chartCtx.lineTo(x,mt+plotH); chartCtx.stroke();
+    chartCtx.fillStyle='#4C5D64';
+    chartCtx.fillText(qg.toLocaleString('id-ID'), x-16, mt+plotH+18);
+  }
+  for(let q=0; q<=yMax; q+=500){
+    const y = Y(q);
+    chartCtx.strokeStyle='rgba(40,65,76,0.5)';
+    chartCtx.beginPath(); chartCtx.moveTo(ml,y); chartCtx.lineTo(ml+plotW,y); chartCtx.stroke();
+    chartCtx.fillStyle='#4C5D64';
+    chartCtx.fillText(q.toLocaleString('id-ID'), 6, y+4);
+  }
+  chartCtx.save();
+  chartCtx.translate(14, mt+plotH/2);
+  chartCtx.rotate(-Math.PI/2);
+  chartCtx.fillStyle='#8195A0';
+  chartCtx.fillText('STB/hari', 0, 0);
+  chartCtx.restore();
+  chartCtx.fillStyle='#8195A0';
+  chartCtx.fillText('Injeksi gas, Mscf/hari', ml+plotW/2-46, h-4);
+
+  // GLPC curve + find peak
+  let peak = {Qgas:0, q:-1};
+  chartCtx.strokeStyle = '#4FB6A8';
+  chartCtx.lineWidth = 2;
+  chartCtx.beginPath();
+  const N=80;
+  for(let i=0;i<=N;i++){
+    const qg = xMax*i/N;
+    const q = computeQ(qg);
+    if(q>peak.q) peak = {Qgas:qg, q};
+    const x = X(qg), y = Y(q);
+    if(i===0) chartCtx.moveTo(x,y); else chartCtx.lineTo(x,y);
+  }
+  chartCtx.stroke();
+
+  // optimum marker
+  const px = X(peak.Qgas), py = Y(peak.q);
+  chartCtx.strokeStyle = 'rgba(129,149,160,0.6)';
+  chartCtx.setLineDash([3,3]);
+  chartCtx.beginPath(); chartCtx.moveTo(px, mt+plotH); chartCtx.lineTo(px, py); chartCtx.stroke();
+  chartCtx.setLineDash([]);
+  chartCtx.fillStyle = '#8195A0';
+  chartCtx.beginPath(); chartCtx.arc(px,py,3.5,0,Math.PI*2); chartCtx.fill();
+
+  // current operating point
+  const ox = X(state.Qgas), oy = Y(state.q);
+  chartCtx.fillStyle = '#E8EDEE';
+  chartCtx.beginPath(); chartCtx.arc(ox,oy,5,0,Math.PI*2); chartCtx.fill();
+  chartCtx.strokeStyle = '#0F1B22'; chartCtx.lineWidth=2;
+  chartCtx.beginPath(); chartCtx.arc(ox,oy,5,0,Math.PI*2); chartCtx.stroke();
+}
+window.addEventListener('resize', resizeChart);
+
+// ---------- 3D scene ----------
+const holder = document.getElementById('canvas-holder');
+let scene, camera, renderer, rig;
+const R_TUBE = 0.42;
+const DEPTH_BELOW_VIS = 0.9, DEPTH_ABOVE_VIS = 4.0;
+const LC = DEPTH_BELOW_VIS + DEPTH_ABOVE_VIS;
+const INJECTION_Y = -DEPTH_ABOVE_VIS;
+const T_INJ = DEPTH_BELOW_VIS/LC;
+
+function initScene(){
+  try{
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a1318);
+    scene.fog = new THREE.Fog(0x0a1318, 7, 18);
+
+    const rect = holder.getBoundingClientRect();
+    camera = new THREE.PerspectiveCamera(40, rect.width/rect.height, 0.1, 100);
+    camera.position.set(3.4, -0.6, 4.6);
+    camera.lookAt(0, -1.6, 0);
+
+    renderer = new THREE.WebGLRenderer({antialias:true, alpha:false});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+    renderer.setSize(rect.width, rect.height);
+    holder.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0x8ea3ac, 0.6));
+    const key = new THREE.DirectionalLight(0xffffff, 0.85);
+    key.position.set(4,3,5);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0x4fb6a8, 0.35);
+    fill.position.set(-3,-2,-3);
+    scene.add(fill);
+
+    rig = new THREE.Group();
+    rig.rotation.set(-0.05, 0.5, 0);
+    scene.add(rig);
+
+    const grid = new THREE.GridHelper(10, 16, 0x28414C, 0x1a2c33);
+    grid.position.y = -LC - 0.05;
+    rig.add(grid);
+
+    buildTubing();
+    buildParticles();
+
+    setupDrag();
+    window.addEventListener('resize', onResize);
+    animate();
+  }catch(e){
+    holder.innerHTML = '<div style="color:#93A3AA;font-family:IBM Plex Sans,sans-serif;font-size:13px;padding:20px;">Tampilan 3D tidak tersedia di browser ini.</div>';
+    console.error(e);
+  }
+}
+
+function buildTubing(){
+  const wallMat = new THREE.MeshPhysicalMaterial({
+    color:0x5c6f78, transparent:true, opacity:0.18, roughness:0.2, metalness:0.1,
+    side:THREE.DoubleSide, depthWrite:false
+  });
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(R_TUBE,R_TUBE,LC,28,1,true), wallMat);
+  tube.position.set(0,-LC/2,0);
+  tube.renderOrder = 2;
+  rig.add(tube);
+
+  const bodyMat = new THREE.MeshStandardMaterial({color:0x33434b, metalness:0.5, roughness:0.5});
+  // wellhead cap at top
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(0.85,0.4,0.85), bodyMat);
+  cap.position.set(0,0.15,0);
+  rig.add(cap);
+  const flowline = new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,1.1,16), bodyMat);
+  flowline.rotation.z = Math.PI/2;
+  flowline.position.set(0.65,0.15,0);
+  rig.add(flowline);
+
+  // perforation marker at bottom (reservoir)
+  const perfMat = new THREE.MeshStandardMaterial({color:0x7A5620, metalness:0.3, roughness:0.6});
+  const perf = new THREE.Mesh(new THREE.TorusGeometry(R_TUBE+0.05,0.03,8,24), perfMat);
+  perf.rotation.x = Math.PI/2;
+  perf.position.set(0,-LC,0);
+  rig.add(perf);
+
+  // gas lift valve collar at injection point
+  const valveMat = new THREE.MeshStandardMaterial({color:0x4FB6A8, metalness:0.4, roughness:0.4});
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(R_TUBE+0.06,0.045,8,24), valveMat);
+  collar.rotation.x = Math.PI/2;
+  collar.position.set(0, INJECTION_Y, 0);
+  rig.add(collar);
+  const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.35,10), valveMat);
+  nozzle.rotation.z = Math.PI/2;
+  nozzle.position.set(R_TUBE+0.2, INJECTION_Y, 0);
+  rig.add(nozzle);
+}
+
+const LIQUID_COUNT = 170;
+const BUBBLE_POOL = 110;
+let liquidPoints, bubblePoints, liquidData, bubbleData;
+
+function makeDotTexture(){
+  const c = document.createElement('canvas'); c.width=32; c.height=32;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(16,16,0,16,16,16);
+  g.addColorStop(0,'rgba(255,255,255,1)');
+  g.addColorStop(0.5,'rgba(255,255,255,0.7)');
+  g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,32,32);
+  return new THREE.CanvasTexture(c);
+}
+
+function buildParticles(){
+  const tex = makeDotTexture();
+
+  // liquid (oil) particles across the whole column
+  const lg = new THREE.BufferGeometry();
+  const lpos = new Float32Array(LIQUID_COUNT*3);
+  lg.setAttribute('position', new THREE.BufferAttribute(lpos,3));
+  const lmat = new THREE.PointsMaterial({size:0.11, color:0xC8862B, map:tex, transparent:true, depthWrite:false});
+  liquidPoints = new THREE.Points(lg, lmat);
+  liquidPoints.renderOrder = 3;
+  rig.add(liquidPoints);
+  liquidData = [];
+  for(let i=0;i<LIQUID_COUNT;i++){
+    liquidData.push({ t:Math.random(), frac:0.1+Math.random()*0.75, theta:Math.random()*Math.PI*2, speedVar:0.85+Math.random()*0.3 });
+  }
+
+  // gas bubble particles, only in the segment above the injection point
+  const bg = new THREE.BufferGeometry();
+  const bpos = new Float32Array(BUBBLE_POOL*3);
+  bg.setAttribute('position', new THREE.BufferAttribute(bpos,3));
+  const bmat = new THREE.PointsMaterial({size:0.07, color:0x4FB6A8, map:tex, transparent:true, depthWrite:false, opacity:0.9});
+  bubblePoints = new THREE.Points(bg, bmat);
+  bubblePoints.renderOrder = 4;
+  rig.add(bubblePoints);
+  bubbleData = [];
+  for(let i=0;i<BUBBLE_POOL;i++){
+    bubbleData.push({ t:T_INJ+Math.random()*(1-T_INJ), frac:0.05+Math.random()*0.55, theta:Math.random()*Math.PI*2, speedVar:0.85+Math.random()*0.3 });
+  }
+}
+
+function yAt(t){ return -LC + t*LC; }
+
+let clock = new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  const glrA = glrEff(state.Qgas);
+  const speedMultAbove = 1 + Math.min(2.6, glrA/400);
+  const speedBelow = 0.10 + (state.q/qomax)*0.18;
+  const speedAbove = speedBelow*speedMultAbove;
+
+  // liquid particles
+  const lpos = liquidPoints.geometry.attributes.position;
+  for(let i=0;i<liquidData.length;i++){
+    const p = liquidData[i];
+    const speed = p.t < T_INJ ? speedBelow : speedAbove;
+    p.t += speed*p.speedVar*dt;
+    if(p.t>1) p.t -= 1;
+    const y = yAt(p.t);
+    const x = p.frac*R_TUBE*Math.cos(p.theta), z = p.frac*R_TUBE*Math.sin(p.theta);
+    lpos.setXYZ(i,x,y,z);
+  }
+  lpos.needsUpdate = true;
+
+  // bubble particles: only the first activeCount are advanced/shown, rest parked out of view
+  const activeCount = Math.round(BUBBLE_POOL*Math.min(1, state.Qgas/QGAS_MAX));
+  const bpos = bubblePoints.geometry.attributes.position;
+  const bubbleSpeed = speedAbove*1.5;
+  for(let i=0;i<bubbleData.length;i++){
+    const p = bubbleData[i];
+    if(i<activeCount){
+      p.t += bubbleSpeed*p.speedVar*dt;
+      if(p.t>1) p.t = T_INJ;
+      const y = yAt(p.t);
+      const x = p.frac*R_TUBE*0.8*Math.cos(p.theta), z = p.frac*R_TUBE*0.8*Math.sin(p.theta);
+      bpos.setXYZ(i,x,y,z);
+    } else {
+      bpos.setXYZ(i, 0, -999, 0);
+    }
+  }
+  bpos.needsUpdate = true;
+
+  renderer.render(scene, camera);
+}
+
+function onResize(){
+  const rect = holder.getBoundingClientRect();
+  camera.aspect = rect.width/rect.height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(rect.width, rect.height);
+}
+
+function setupDrag(){
+  let dragging=false, px=0, py=0;
+  let rotX=-0.05, rotY=0.5;
+  holder.addEventListener('pointerdown', e=>{
+    dragging=true; px=e.clientX; py=e.clientY; holder.classList.add('dragging');
+  });
+  window.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const dx=e.clientX-px, dy=e.clientY-py;
+    px=e.clientX; py=e.clientY;
+    rotY += dx*0.006;
+    rotX = Math.max(-0.5, Math.min(0.5, rotX + dy*0.006));
+    rig.rotation.set(rotX, rotY, 0);
+  });
+  window.addEventListener('pointerup', ()=>{ dragging=false; holder.classList.remove('dragging'); });
+}
+
+initScene();
+recompute();
+resizeChart();
+</script>
+</body>
+</html>

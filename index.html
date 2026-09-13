@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Petro Physics Lab — Fisika Produksi Migas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Roboto+Slab:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1B22;
+    --bg-deep:#0A1318;
+    --panel:#142229;
+    --panel-border:#28414C;
+    --steel:#8195A0;
+    --steel-dim:#4C5D64;
+    --oil:#C8862B;
+    --oil-dim:#7A5620;
+    --gas:#4FB6A8;
+    --text:#E8EDEE;
+    --text-muted:#93A3AA;
+    --sans:'IBM Plex Sans', sans-serif;
+    --slab:'Roboto Slab', serif;
+    --mono:'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px;}
+
+  header.top{
+    padding:26px 0 0;
+  }
+  .wordmark{
+    font-family:var(--slab);
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:0.02em;
+    color:var(--text-muted);
+  }
+  .wordmark b{color:var(--oil);font-weight:600;}
+
+  .hero{
+    display:grid;
+    grid-template-columns:1.05fr 0.95fr;
+    gap:48px;
+    align-items:center;
+    padding:52px 0 40px;
+    border-bottom:1px solid var(--panel-border);
+  }
+  h1{
+    font-family:var(--slab);
+    font-weight:600;
+    font-size:44px;
+    line-height:1.15;
+    margin:0 0 20px;
+    max-width:15ch;
+  }
+  .hero p{
+    color:var(--text-muted);
+    font-size:16.5px;
+    max-width:46ch;
+    margin:0 0 14px;
+  }
+  .hero p.lede{color:var(--text);font-size:17.5px;}
+
+  .rig-svg{width:100%;height:auto;display:block;}
+
+  section.modules{padding:48px 0 20px;}
+  .section-label{
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--steel);
+    margin:0 0 18px;
+  }
+  .modules-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:22px;
+  }
+  .module-card{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    padding:26px 26px 24px;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    min-height:280px;
+  }
+  .module-card::before{
+    content:"";
+    position:absolute;
+    top:14px;left:14px;
+    width:9px;height:9px;
+    border-top:1px solid var(--steel-dim);
+    border-left:1px solid var(--steel-dim);
+  }
+  .module-tag{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--gas);
+    margin:0 0 12px;
+  }
+  .module-card.oil .module-tag{color:var(--oil);}
+  .module-card h2{
+    font-family:var(--slab);
+    font-weight:600;
+    font-size:23px;
+    margin:0 0 10px;
+  }
+  .module-card p{
+    color:var(--text-muted);
+    font-size:15px;
+    margin:0 0 18px;
+    flex-grow:1;
+  }
+  .module-meta{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--steel);
+    margin-bottom:20px;
+    padding-top:14px;
+    border-top:1px solid var(--panel-border);
+  }
+  .btn{
+    display:inline-block;
+    align-self:flex-start;
+    background:transparent;
+    border:1px solid var(--steel-dim);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:14.5px;
+    font-weight:500;
+    padding:10px 18px;
+    text-decoration:none;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .module-card.gas .btn:hover{border-color:var(--gas);background:rgba(79,182,168,0.08);}
+  .module-card.oil .btn:hover{border-color:var(--oil);background:rgba(200,134,43,0.08);}
+
+  footer{
+    padding:34px 0 46px;
+    color:var(--steel);
+    font-size:13px;
+    border-top:1px solid var(--panel-border);
+    margin-top:20px;
+  }
+  footer p{margin:0 0 6px;}
+
+  @media (max-width:820px){
+    .hero{grid-template-columns:1fr;padding-top:34px;}
+    .hero .rig-svg{order:-1;max-width:340px;margin:0 auto;}
+    h1{font-size:32px;}
+    .modules-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="wordmark"><b>Petro</b> Physics Lab</div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <h1>Fisika yang sebenarnya menggerakkan setiap barel.</h1>
+      <p class="lede">Dua simulator interaktif yang menghubungkan rumus teknik produksi migas dengan animasi 3D yang bergerak sesuai hitungannya sendiri — bukan animasi hiasan.</p>
+      <p>Geser parameter sumur — ukuran choke, laju injeksi gas — dan lihat langsung bagaimana tekanan serta laju alir berubah, lengkap dengan kurva Nodal Analysis dan Gas Lift Performance Curve di baliknya.</p>
+    </div>
+    <svg class="rig-svg" viewBox="0 0 420 380" xmlns="http://www.w3.org/2000/svg">
+      <line x1="20" y1="330" x2="400" y2="330" stroke="#28414C" stroke-width="1"/>
+      <!-- casing -->
+      <rect x="196" y="70" width="28" height="260" fill="none" stroke="#4C5D64" stroke-width="1.5"/>
+      <!-- tubing -->
+      <rect x="204" y="70" width="12" height="260" fill="none" stroke="#8195A0" stroke-width="1.2"/>
+      <!-- wellhead body -->
+      <rect x="184" y="46" width="52" height="30" fill="none" stroke="#8195A0" stroke-width="1.5"/>
+      <!-- choke arm -->
+      <line x1="236" y1="60" x2="300" y2="60" stroke="#8195A0" stroke-width="1.5"/>
+      <path d="M270 52 L286 60 L270 68 Z" fill="none" stroke="#C8862B" stroke-width="1.5"/>
+      <line x1="300" y1="60" x2="300" y2="40" stroke="#8195A0" stroke-width="1.2"/>
+      <!-- gas bubbles rising in tubing -->
+      <circle cx="210" cy="260" r="3" fill="none" stroke="#4FB6A8" stroke-width="1"/>
+      <circle cx="209" cy="225" r="2.4" fill="none" stroke="#4FB6A8" stroke-width="1"/>
+      <circle cx="211" cy="190" r="3.2" fill="none" stroke="#4FB6A8" stroke-width="1"/>
+      <circle cx="209" cy="150" r="2.2" fill="none" stroke="#4FB6A8" stroke-width="1"/>
+      <circle cx="210" cy="110" r="2.8" fill="none" stroke="#4FB6A8" stroke-width="1"/>
+      <!-- perforations / reservoir inflow -->
+      <path d="M196 300 L172 292 M196 312 L172 320 M224 300 L248 292 M224 312 L248 320" stroke="#C8862B" stroke-width="1.2"/>
+      <!-- reservoir arrows -->
+      <path d="M150 296 L170 296 M164 291 L170 296 L164 301" fill="none" stroke="#7A5620" stroke-width="1.2"/>
+      <path d="M150 316 L170 316 M164 311 L170 316 L164 321" fill="none" stroke="#7A5620" stroke-width="1.2"/>
+      <path d="M270 296 L250 296 M256 291 L250 296 L256 301" fill="none" stroke="#7A5620" stroke-width="1.2"/>
+      <path d="M270 316 L250 316 M256 311 L250 316 L256 321" fill="none" stroke="#7A5620" stroke-width="1.2"/>
+      <text x="210" y="358" text-anchor="middle" fill="#4C5D64" font-family="IBM Plex Mono" font-size="11">wellhead — tubing — reservoir</text>
+    </svg>
+  </section>
+
+  <section class="modules">
+    <p class="section-label">Pilih modul</p>
+    <div class="modules-grid">
+      <a href="choke-flow.html" style="text-decoration:none;">
+        <div class="module-card oil">
+          <p class="module-tag">Modul 1 — Permukaan</p>
+          <h2>Choke &amp; Kinerja Alir</h2>
+          <p>Atur bukaan choke di wellhead dan lihat titik operasi sumur bergeser secara langsung lewat Nodal Analysis — perpotongan kurva inflow reservoir dan outflow tubing.</p>
+          <div class="module-meta">
+            <span>Vogel IPR</span>
+            <span>Gilbert choke correlation</span>
+          </div>
+          <span class="btn">Buka simulasi</span>
+        </div>
+      </a>
+      <a href="gas-lift.html" style="text-decoration:none;">
+        <div class="module-card gas">
+          <p class="module-tag">Modul 2 — Bawah Permukaan</p>
+          <h2>Gas Lift Simulation</h2>
+          <p>Injeksikan gas ke tubing dan amati bagaimana kolom fluida jadi lebih ringan — sampai titik optimum di mana gas ekstra justru menurunkan laju produksi.</p>
+          <div class="module-meta">
+            <span>Continuous gas lift</span>
+            <span>Gas Lift Performance Curve</span>
+          </div>
+          <span class="btn">Buka simulasi</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <p>Model pada kedua modul disederhanakan untuk keperluan visualisasi dan belajar — bukan pengganti software nodal analysis atau desain gas lift yang sesungguhnya.</p>
+    <p>Dibangun sebagai eksplorasi irisan AI/Software Engineering dengan Petroleum Engineering.</p>
+  </footer>
+</div>
+</body>
+</html>
